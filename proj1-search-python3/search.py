@@ -95,6 +95,7 @@ def depthFirstSearch(problem):
     frontier.push((start_state, []))
     explored = set()
     while not frontier.isEmpty():
+        # The difference with dfs is how .pop is implemented. Here it uses LIFO.
         curr_state, actions = frontier.pop()
         if curr_state not in explored:
             explored.add(curr_state)
