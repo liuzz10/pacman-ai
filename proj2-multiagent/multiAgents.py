@@ -172,8 +172,20 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        # print("gameState.getLegalActions(agentIndex)", gameState.getLegalActions(0),gameState.getLegalActions(1), gameState.getLegalActions(2), gameState.getLegalActions(3))
-        # print("gameState.getNumAgents()", gameState.getNumAgents())
+        """
+        Depth is how many times a pacman and all ghosts moves. For example,
+        depth = 2 will involve Pacman and each ghost moving two times.
+        For each move, there are gameState.getNumAgents() layers, each layer
+        is an agent.
+        Considering depth and all agent, the number of layers in search tree
+        = # of agents * # of depth.
+        Max layer is the pacman, Min layer is all ghosts.
+        Each depth involves following layers:
+        Max -> Min1 -> Min2 -> ... -> MinN
+        A max layer is followed by a min layer, A min layer can be followed by
+        either a max layer or a min layer. The base case is the last Min layer
+        which calls a max layer.
+        """
         
         def min_value(state, curr_agent, total_agent, depth, evaluation_function):
             """
@@ -238,7 +250,51 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        """
+        This is the same with Minimax except that min_value() is replaced
+        by exp_value() which calculate the expectation of all values instead
+        of the min.
+        """
+        def exp_value(state, curr_agent, total_agent, depth, evaluation_function):
+            """
+            Return the mininum value
+            """
+            if state.isLose() or state.isWin():
+                return evaluation_function(state)
+            v = 0
+            count = 0
+            for action in state.getLegalActions(curr_agent):
+                next_state = state.generateSuccessor(curr_agent, action)
+                if curr_agent == total_agent - 1:
+                    value, _ = max_value(next_state, 0, total_agent, depth - 1, evaluation_function)
+                    v += value
+                else:
+                    value = exp_value(next_state, curr_agent+1, total_agent, depth, evaluation_function)
+                    v += value
+                count += 1
+            return v / count
+        
+        def max_value(state, curr_agent, total_agent, depth, evaluation_function):
+            """
+            Return the maximum value and the action
+            """
+            if depth == 0 or state.isLose() or state.isWin():
+                return evaluation_function(state), ""
+            best_action = ""
+            v = float("-inf")
+            for action in state.getLegalActions(curr_agent):
+                next_state = state.generateSuccessor(curr_agent, action)
+                value = exp_value(next_state, curr_agent + 1, total_agent, depth, evaluation_function)
+                if value > v:
+                    v = value
+                    best_action = action
+            return v, best_action
+
+        total_agent = gameState.getNumAgents()
+        _, best_action = max_value(gameState, 0, total_agent, self.depth, self.evaluationFunction)
+        return best_action
+
+
 
 def betterEvaluationFunction(currentGameState):
     """
