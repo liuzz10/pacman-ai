@@ -13,6 +13,7 @@
 
 
 from util import manhattanDistance
+from searchAgents import mazeDistance
 from game import Directions
 import random, util
 
@@ -72,29 +73,27 @@ class ReflexAgent(Agent):
         newFood = successorGameState.getFood()
         newGhostStates = successorGameState.getGhostStates()
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
-        # print("newPos", newPos)
-        # print("newFood", newFood)
-        # print("str-newGhostStates", list(map(str, newGhostStates)))
-        # print("newScaredTimes", newScaredTimes)
 
-        "*** YOUR CODE HERE ***"
         score = 0
 
+        # Get the distance to nearest food and score it negatively (more close more score)
         current_food = currentGameState.getFood().asList()
         if newPos in current_food:
             score += 100
         food_distance = [manhattanDistance(newPos, food) for food in current_food]
         nearest_food = min(food_distance)
-        score += -nearest_food
+        score -= nearest_food
 
+        # Get the distance to nearest capsule and score it negatively (more close more score)
         current_capsules = currentGameState.getCapsules()
         if newPos in current_capsules:
             score += 500
         capsule_distance = [manhattanDistance(newPos, cap) for cap in current_capsules]
         if capsule_distance:
             nearest_capsule = min(capsule_distance)
-            score += -nearest_capsule * 5
+            score -= nearest_capsule * 5
 
+        # Get the distance to nearest ghost and score it negatively (more close more score)
         ghost_position = [new_ghost.getPosition() for new_ghost in newGhostStates]
         ghost_distance = [manhattanDistance(newPos, ghost_p) for ghost_p in ghost_position]
         nearest_ghost = min(ghost_distance)
@@ -170,9 +169,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         gameState.isLose():
         Returns whether or not the game state is a losing state
-        """
-        "*** YOUR CODE HERE ***"
-        """
+
+        Idea:
         Depth is how many times a pacman and all ghosts moves. For example,
         depth = 2 will involve Pacman and each ghost moving two times.
         For each move, there are gameState.getNumAgents() layers, each layer
@@ -194,6 +192,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
             if state.isLose() or state.isWin():
                 return evaluation_function(state)
             v = float("inf")
+            # Iterate all actions and get the min of all children
             for action in state.getLegalActions(curr_agent):
                 next_state = state.generateSuccessor(curr_agent, action)
                 if curr_agent == total_agent - 1:
@@ -207,10 +206,12 @@ class MinimaxAgent(MultiAgentSearchAgent):
             """
             Return the maximum value and the action
             """
+            # Return at the last level
             if depth == 0 or state.isLose() or state.isWin():
                 return evaluation_function(state), ""
             best_action = ""
             v = float("-inf")
+            # Iterate all actions and get the max of all children
             for action in state.getLegalActions(curr_agent):
                 next_state = state.generateSuccessor(curr_agent, action)
                 value = min_value(next_state, curr_agent + 1, total_agent, depth, evaluation_function)
@@ -248,21 +249,20 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
 
         All ghosts should be modeled as choosing uniformly at random from their
         legal moves.
-        """
-        "*** YOUR CODE HERE ***"
-        """
+
         This is the same with Minimax except that min_value() is replaced
         by exp_value() which calculate the expectation of all values instead
         of the min.
         """
         def exp_value(state, curr_agent, total_agent, depth, evaluation_function):
             """
-            Return the mininum value
+            Return the expectation value
             """
             if state.isLose() or state.isWin():
                 return evaluation_function(state)
             v = 0
             count = 0
+            # Iterate all actions and get the expectation of all children
             for action in state.getLegalActions(curr_agent):
                 next_state = state.generateSuccessor(curr_agent, action)
                 if curr_agent == total_agent - 1:
@@ -282,6 +282,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 return evaluation_function(state), ""
             best_action = ""
             v = float("-inf")
+            # Iterate all actions and get the one with max value
             for action in state.getLegalActions(curr_agent):
                 next_state = state.generateSuccessor(curr_agent, action)
                 value = exp_value(next_state, curr_agent + 1, total_agent, depth, evaluation_function)
@@ -304,7 +305,38 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # print("currentGameState.getNumAgents()", currentGameState.getNumAgents())
+    # print("currentGameState.getPacmanPosition()", currentGameState.getPacmanPosition())
+    # print("currentGameState.getGhostPositions()", currentGameState.getGhostPositions())
+    # print("currentGameState.getCapsules()", currentGameState.getCapsules())
+    # print("currentGameState.getFood()",currentGameState.getFood())
+    
+    # Get base score
+    score = currentGameState.getScore()
+    packman_pos = currentGameState.getPacmanPosition()
+
+    # Get the distance to all food and score it negatively (more close more score)
+    current_food = currentGameState.getFood().asList()
+    if current_food:
+        food_distance = [manhattanDistance(packman_pos, food) for food in current_food]
+        sum_food = sum(food_distance)
+        score += 1 / sum_food
+
+    # Get the distance to all capsules and score it negatively (more close more score)
+    current_capsules = currentGameState.getCapsules()
+    capsule_distance = [manhattanDistance(packman_pos, cap) for cap in current_capsules]
+    if capsule_distance:
+        sum_capsule = sum(capsule_distance)
+        score += 1 / sum_capsule
+
+    # If lose or win, score it highly
+    if currentGameState.isLose():
+        score -= 1000
+
+    if currentGameState.isWin():
+        score += 1000
+    
+    return score
 
 # Abbreviation
 better = betterEvaluationFunction
